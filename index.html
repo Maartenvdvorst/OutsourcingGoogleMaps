@@ -1,0 +1,164 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="stylesheet.css">
+<title>Google Maps API</title>
+
+<style type="text/css">
+
+#map-canvas {
+	width: 1000px;
+	height: 600px;
+}
+
+</style>
+
+<!--<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script> -->
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="CustomGoogleMapMarker.js"></script>
+<script type="text/javascript">
+
+
+//*/
+
+function initialize() {
+
+	var myLatlng = new google.maps.LatLng(51.452411,5.477506);
+	var mapOptions = {
+		zoom: 14,
+		center: myLatlng,
+		disableDefaultUI: true
+	}
+	
+	var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);	
+		var goal = "vullen";
+	
+	
+
+
+
+		var input = document.getElementById('pac-input');
+		map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+	    var searchBox = new google.maps.places.SearchBox(input);
+		
+		map.addListener('bounds_changed', function() {
+	          searchBox.setBounds(map.getBounds());
+	    });
+		
+		var markers = [];
+		
+		searchBox.addListener('places_changed', function() {
+	    var places = searchBox.getPlaces();
+
+	    if (places.length == 0) {
+	    return;
+	    }
+
+	    markers.forEach(function(marker) {
+	    marker.setMap(null);
+	    });
+	    markers = [];
+
+	    var bounds = new google.maps.LatLngBounds();
+	    places.forEach(function(place) {
+			if (!place.geometry) {
+			console.log("Returned place contains no geometry");
+			return;
+			}
+			
+
+			if (place.geometry.viewport) {	
+			bounds.union(place.geometry.viewport);
+			} 
+			else {
+			bounds.extend(place.geometry.location);
+			}
+	    });
+	    map.fitBounds(bounds);
+	    });
+
+
+
+
+	$.ajax({
+		type: "POST",
+		url : "markerDB.php",
+		data:{funct : "fetch"},
+		success: function (data)
+		{
+			console.log(data);
+			goal = "vullen";
+			var json = JSON.parse(data);
+			console.log(json);
+
+			 json.forEach(function(element){
+
+			 	
+				overlay = new CustomMarker(
+						element["lat"],
+						element["lng"], 
+						map,
+						element["name"],
+						goal
+
+						
+
+
+					);
+			 	console.log(element);
+			 })
+			
+			 
+			
+        	
+		},
+		error:function(data){
+			console.log(data);
+		}
+	});
+
+	google.maps.event.addDomListener(map, "click", function(event) {
+			var plaats = event.latLng;
+			var goal = "create";
+			console.log(plaats);
+			console.log(plaats.lat);
+			console.log(plaats.lng);
+			var answer = confirm("Nieuw punt aanmaken?")
+			if(answer)
+			{
+				var name = prompt("Geef het punt een naam:");
+				if(name)
+				{
+					overlay = new CustomMarker(
+						plaats.lat,
+						plaats.lng, 
+						map,
+						name,
+						goal
+
+						
+
+
+					);
+					location.reload();
+				}
+			}
+			else
+			{
+			}
+		});
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+</script>
+
+</head>
+<body>
+	<div id="witregel"></div>
+	<input id="pac-input" class="controls" type="text" placeholder="Search Box">
+	<div id="map-canvas"></div>
+</body>
+</html>
